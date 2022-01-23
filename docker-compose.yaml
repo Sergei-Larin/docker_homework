@@ -1,0 +1,59 @@
+version: "2.4"
+   
+services:
+  database:
+    container_name: database      
+    image: postgres:latest
+    restart: always
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=django
+      - POSTGRES_DB=django
+      - POSTGRES_PASSWORD=django
+    networks:
+      - backend
+
+  backend:
+    build: 
+      context: ./lib_catalog
+      dockerfile: Dockerfile
+      args:
+        - HOST_IP 
+    container_name: app_backend
+    image:  backend:latest
+    restart: always
+    environment: 
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - database
+    networks:
+      - backend      
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - HOST_IP
+    container_name: app_frontend
+    image: frontend:latest
+    restart: always
+    volumes:
+        - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - frontend
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge     
